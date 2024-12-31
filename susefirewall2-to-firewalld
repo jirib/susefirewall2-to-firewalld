@@ -213,6 +213,17 @@ susefirewall2_present() {
 # transient strange rules which might be lurking around.
 #
 susefirewall2_init() {
+    local susefirewall2_service
+    local distribution
+
+    distribution=$(rpm -q --qf '%{DISTRIBUTION}' SuSEfirewall2 | rev | \
+                      cut -c1-2 | rev)
+
+    case $distribution in
+       11) susefirewall2_service=SuSEfirewall2_setup;;
+       12) susefirewall2_service=SuSEfirewall2;;
+    esac
+
     susefirewall2_present || return 0
 
     if [[ ${1} == true ]]; then
@@ -222,12 +233,11 @@ susefirewall2_init() {
         # Restart it so we start clean
         info "Restarting SuSEfirewall2_init"
         systemctl -q restart SuSEfirewall2_init || error "Failed to restart SuSEfirewall2_init"
-
-        info "Restarting SuSEfirewall2"
-        systemctl -q restart SuSEfirewall2 || error "Failed to start SuSEfirewall2"
+        info "Restarting ${susefirewall2_service}"
+        systemctl -q restart ${susefirewall2_service} || error "Failed to start ${susefirewall2_service}"
     elif [[ ${1} == false ]]; then
-        info "Stopping SuSEfirewall2"
-        systemctl -q stop SuSEfirewall2 || error "Failed to stop the SuSEfirewall2 service"
+        info "Stopping ${susefirewall2_service}"
+        systemctl -q stop ${susefirewall2_service} || error "Failed to stop the ${susefirewall2_service} service"
 
         info "Stopping SuSEfirewall2_init"
         systemctl -q stop SuSEfirewall2_init || error "Failed to stop the SuSEfirewall2_init service"
@@ -236,9 +246,9 @@ susefirewall2_init() {
         systemctl -q restart firewalld || error "Failed to start the firewalld service"
     elif [[ ${1} == switch ]]; then
         ${commit} || return
-        info "Stopping and disabling SuSEfirewall2"
-        systemctl -q stop SuSEfirewall2 || error "Failed to stop the SuSEfirewall2 service"
-        systemctl -q disable SuSEfirewall2 || error "Failed to disable the SuSEfirewall2 service"
+        info "Stopping and disabling ${susefirewall2_service}"
+        systemctl -q stop ${susefirewall2_service} || error "Failed to stop the ${susefirewall2_service} service"
+        systemctl -q disable ${susefirewall2_service} || error "Failed to disable the ${susefirewall2_service} service"
 
         info "Stopping and disabling SuSEfirewall2_init"
         systemctl -q stop SuSEfirewall2_init || error "Failed to stop the SuSEfirewall2_init service"
